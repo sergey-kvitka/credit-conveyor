@@ -1,0 +1,3 @@
+[submodule "conveyor"]
+	path = conveyor
+	url = https://github.com/sergey-kvitka/conveyor
