@@ -10,3 +10,6 @@
 [submodule "dossier"]
 	path = dossier
 	url = https://github.com/sergey-kvitka/dossier
+[submodule "gateway"]
+	path = gateway
+	url = https://github.com/sergey-kvitka/gateway
