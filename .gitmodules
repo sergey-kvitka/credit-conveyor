@@ -4,3 +4,6 @@
 [submodule "deal"]
 	path = deal
 	url = https://github.com/sergey-kvitka/deal
+[submodule "application"]
+	path = application
+	url = https://github.com/sergey-kvitka/application
