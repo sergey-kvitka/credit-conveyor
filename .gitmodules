@@ -1,3 +1,6 @@
 [submodule "conveyor"]
 	path = conveyor
 	url = https://github.com/sergey-kvitka/conveyor
+[submodule "deal"]
+	path = deal
+	url = https://github.com/sergey-kvitka/deal
