@@ -1,0 +1,105 @@
+version: "3.1"
+
+services:
+
+  postgres-db:
+    image: postgres
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=neoflex-deal-db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+  conveyor:
+    build: ./conveyor
+    container_name: conveyor
+    ports:
+      - "8081:8081"
+
+  deal:
+    build: ./deal
+    container_name: deal
+    ports:
+      - "8020:8020"
+    depends_on:
+      - conveyor
+      - postgres-db
+      - kafka
+    restart: always
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/neoflex-deal-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - rest.conveyor.url=http://conveyor:8081
+      - spring.kafka.bootstrap-servers=kafka:9092
+
+  application:
+    build: ./application
+    container_name: application
+    ports:
+      - "7900:7900"
+    depends_on:
+      - deal
+    environment:
+      - rest.deal.url=http://deal:8020
+
+  dossier:
+    build: ./dossier
+    container_name: dossier
+    ports:
+      - "7500:7500"
+    depends_on:
+      - deal
+      - kafka
+    environment:
+      - rest.deal.url=http://deal:8020
+      - spring.kafka.bootstrap-servers=kafka:9092
+
+  gateway:
+    build: ./gateway
+    container_name: api-gateway
+    ports:
+      - "7000:7000"
+    depends_on:
+      - deal
+      - application
+    environment:
+      - rest.application.url=http://application:7900
+      - rest.deal.url=http://deal:8020
+
+  zookeeper:
+    image: zookeeper:3.4.9
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_PORT: 2181
+      ZOO_SERVERS: server.1=zookeeper:2888:3888
+    volumes:
+      - ./data/zookeeper/data:/data
+      - ./data/zookeeper/datalog:/datalog
+
+  kafka:
+    image: confluentinc/cp-kafka:5.3.0
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:19092,LISTENER_DOCKER_EXTERNAL://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./data/kafka/data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
